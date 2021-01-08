@@ -1,8 +1,11 @@
 package io.vertx.example;
 
 import java.io.IOException;
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Optional;
+
 
 import org.apache.commons.io.IOUtils;
 
@@ -59,8 +62,40 @@ public class BooksDB {
           })
           .map(item -> (JsonObject) item)
           .findAny();
-      future.complete(book.get());
+      if(book.isPresent()){
+        future.complete(book.get());
+      }
+      else{
+        future.fail("The book requested is not present");
+      }
     }, handler);
+  }
+
+  public void getFeaturedBook(Handler<AsyncResult<JsonObject>> handler){
+    runTask(future -> {
+
+        Optional<JsonObject> book = books.stream()
+          .map(item -> (JsonObject) item)
+          .sorted((item1, item2) -> {
+            SimpleDateFormat df  = new SimpleDateFormat("yyyy-MM-dd");
+            try{
+              return  df.parse(item2.getString("published")).compareTo(df.parse(item1.getString("published")));
+            } catch (ParseException e) {
+              return 0;
+            }
+          })
+          .limit(10)
+          .skip(1L + (long) (Math.random() * (10L - 1L)))
+          .findFirst();
+        if(book.isPresent()){
+          future.complete(book.get());
+        }
+        else{
+          future.fail("No featured book is not present");
+        }
+      }
+      ,handler);
+
   }
 
 }

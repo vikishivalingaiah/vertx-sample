@@ -60,7 +60,12 @@ public class BookService {
 
   private void createBook(RoutingContext rc) {
     JsonObject book = rc.getBodyAsJson();
-    validateBook(book);
+    try {
+      validateBook(book);
+    }
+    catch (IllegalStateException e){
+      sendErrorResponse(rc, 400, e.getMessage());
+    }
     books.addBook(book, res -> {
       sendJsonResponse(rc, 200, book);
     });
@@ -69,12 +74,23 @@ public class BookService {
   private void getBookByIsbn(RoutingContext rc) {
     String isbn = rc.request().getParam("isbn");
     books.getBook(isbn, res -> {
-      sendJsonResponse(rc, 200, res.result());
-    });
+      if(res.succeeded()) {
+        sendJsonResponse(rc, 200, res.result());
+      }else{
+        sendErrorResponse(rc, 404,  res.cause().getMessage());
+    }});
   }
 
   private void getFeaturedBook(RoutingContext rc) {
-    sendErrorResponse(rc, 501, "Not implemented");
+
+    books.getFeaturedBook(
+      res -> {if(res.succeeded()) {
+      sendJsonResponse(rc, 200, res.result());
+    }else{
+      sendErrorResponse(rc, 404,  res.cause().getMessage());
+    }}
+
+    );
   }
 
   private void validateBook(JsonObject book) {
